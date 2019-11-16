@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "228860241371",
+    "firebase_url": "https://childcare-7c4d7.firebaseio.com",
+    "project_id": "childcare-7c4d7",
+    "storage_bucket": "childcare-7c4d7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:228860241371:android:910c11b3aad1deb9a333fe",
+        "android_client_info": {
+          "package_name": "com.example.childcare"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "228860241371-oh40aio21ltplrspur33uldo7o4m2i7r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.childcare",
+            "certificate_hash": "42e5c70ce78245155755f8eee4e06720c49cee88"
+          }
+        },
+        {
+          "client_id": "228860241371-b28j6e0roe5odpq6v3hf6gke8ca8mt00.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlQ1_TfA_kKpF7BSBFiqhMJU_QH3HjewE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "228860241371-b28j6e0roe5odpq6v3hf6gke8ca8mt00.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
