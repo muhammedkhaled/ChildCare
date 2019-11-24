@@ -1,17 +1,33 @@
 package com.example.childcare;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -19,6 +35,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -29,13 +46,16 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 
+import de.hdodenhof.circleimageview.CircleImageView;
+
 public class MapTracker extends FragmentActivity implements OnMapReadyCallback {
 
     private static final String TAG = "MapTracker";
     private GoogleMap mMap;
     private ValueEventListener mListener;
-
-    ArrayList<ChildrenLocation>children;
+    private static final String URL_DEMO = "https://www.gstatic.com/webp/gallery/4.sm.jpg";
+    private static final String DB_NAME = "childCarModel";
+    ArrayList<ChildModle>children;
     DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference();
 
     @Override
@@ -46,6 +66,7 @@ public class MapTracker extends FragmentActivity implements OnMapReadyCallback {
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        getChildrenLocation();
     }
 
 
@@ -63,25 +84,23 @@ public class MapTracker extends FragmentActivity implements OnMapReadyCallback {
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        showMarkers(demoObject());
+        getChildrenLocation();
 
     }
 
-    public void showMarkers(ArrayList<ChildrenLocation> locations){
+    public void showMarkers(ArrayList<ChildModle> locations){
         if(mMap!=null){
-
-            LatLng mLocation;
-
+            LatLng mLocation = null;
             for (int i = 0; i < locations.size(); i++) {
-                mLocation = new LatLng(locations.get(i).getLat(),locations.get(i).getLng());
-                Log.d(TAG, "onMapReady location : "+locations.get(i).getLat()+locations.get(i).getLng());
-
+                mLocation = new LatLng(locations.get(i).getLocation().getLat(),locations.get(i).getLocation().getLng());
+                //Log.d(TAG, "onMapReady location : "+locations.get(i).getLat()+locations.get(i).getLng());
                 mMap.addMarker(new MarkerOptions().position(mLocation)
-                        .icon(BitmapDescriptorFactory.fromBitmap(getBitMap(R.drawable.project)))
-                        .title(locations.get(i).getChildName()));
+                        .icon(BitmapDescriptorFactory.fromBitmap(createCustomMarker(this,locations.get(i).getImageUrl(),locations.get(i).getName()))));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mLocation,10));
             }
 
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(mLocation));
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(14), 2000, null);
             // Add a marker in Sydney and move the camera
             // LatLng sydney = new LatLng(-34, 151);
             // mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
@@ -90,95 +109,156 @@ public class MapTracker extends FragmentActivity implements OnMapReadyCallback {
         }
     }
 
-    public Bitmap getBitMap( int resource){
-        Bitmap.Config conf = Bitmap.Config.ARGB_8888;
-        Bitmap bmp = Bitmap.createBitmap(100, 100, conf);
-        Canvas canvas1 = new Canvas(bmp);
+    @SuppressLint("CheckResult")
+    public Bitmap createCustomMarker(Context context, String ur, String _name) {
+        View marker = getLayoutInflater().inflate(R.layout.custom_marker_layout,null);
+        CircleImageView markerImage =  marker.findViewById(R.id.user_dp);
+       // markerImage.setImageResource(resource);
 
-// paint defines the text color, stroke width and size
-        Paint color = new Paint();
-        color.setTextSize(35);
-        color.setColor(Color.BLACK);
+       // markerImage.setImageURI(Uri.parse(ur));
+        TextView txt_name = marker.findViewById(R.id.marker_child_name);
+        txt_name.setText(_name);
 
-// modify canvas
-        canvas1.drawBitmap(BitmapFactory.decodeResource(getResources(),
-                R.drawable.project), 0,0, color);
-        canvas1.drawText("User Name!", 30, 40, color);
+        Glide.with(this).asBitmap().load(ur)
+        .addListener(new RequestListener<Bitmap>() {
+            @Override
+            public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Bitmap> target, boolean isFirstResource) {
+                Log.d(TAG, "onLoadFailed: fail load image");
+                return false;
+            }
 
-        return bmp;
+            @Override
+            public boolean onResourceReady(Bitmap resource, Object model, Target<Bitmap> target, DataSource dataSource, boolean isFirstResource) {
+                markerImage.setImageBitmap(resource);
+                Log.d(TAG, "onResourceReady: success");
+                return true;
+            }
+        });
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        ((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        marker.setLayoutParams(new ViewGroup.LayoutParams(160, 160));
+        marker.measure(displayMetrics.widthPixels, displayMetrics.heightPixels);
+        marker.layout(displayMetrics.widthPixels, displayMetrics.widthPixels, displayMetrics.widthPixels, displayMetrics.heightPixels);
+        marker.buildDrawingCache();
+        Bitmap bitmap = Bitmap.createBitmap(marker.getMeasuredWidth(), marker.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        marker.draw(canvas);
+
+        return bitmap;
     }
 
-    public ArrayList<ChildrenLocation> demoObject(){
-        ArrayList<ChildrenLocation> obj = new ArrayList<>();
-        obj.add(new ChildrenLocation("-31.952854,115.857342"));
-        obj.add(new ChildrenLocation("-33.87365, 151.20689"));
-        obj.add(new ChildrenLocation("-27.47093, 153.0235"));
-        //obj.add("mansoura");
-        return obj;
-    }
+    public void  getChildrenLocation(){
 
-    public ArrayList<ChildrenLocation>  getChildrenLocation(){
-
-        ArrayList<ChildrenLocation> children = new ArrayList<>();
-         mListener = dbRef.child("location ").addValueEventListener(new ValueEventListener() {
+        ArrayList<ChildModle> child = new ArrayList<>();
+         mListener = dbRef.child(DB_NAME).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 for(DataSnapshot shot: dataSnapshot.getChildren()){
-
+                    child.add(shot.getValue(ChildModle.class));
+                    Log.d(TAG, "onDataChange: success");
+                    Log.d(TAG, "onDataChange: ");
                 }
+                children =child;
+                showMarkers(child);
+                Log.d(TAG, "onDataChange: size : "+child.size());
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-
+                Log.d(TAG, "onCancelled: error");
             }
         });
 
-        // FirebaseDatabase.getInstance().getReference().removeEventListener(mListener);
-
-
-        return null;
     }
 
-    public class ChildrenLocation{
-        String latLng;
-        double lat;
-        double lng;
 
-        public String getChildName() {
-            return childName;
-        }
+    public void uploadDemo(){
 
-        public void setChildName(String childName) {
-            this.childName = childName;
-        }
+        LatLng customMarkerLocationOne = new LatLng(28.583911, 77.319116);
+        LatLng customMarkerLocationTwo = new LatLng(28.583078, 77.313744);
+        LatLng customMarkerLocationThree = new LatLng(28.580903, 77.317408);
+        LatLng customMarkerLocationFour = new LatLng(28.580108, 77.315271);
 
-        String childName;
+        String id1 ="1001";
+        String id2 ="1002";
+        String id3 ="1003";
+        String id4 ="1004";
 
-        public ChildrenLocation(String latLng) {
-            this.latLng = latLng;
-            childName = "demoo";
-            String [] loc = latLng.split(",");
-            lat = Double.parseDouble(loc[0]);
-            lng = Double.parseDouble(loc[1]);
-        }
+        DatabaseReference db = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference ref = db.child("childCarModel");
 
-        public double getLat() {
-            return lat;
-        }
+        ChildModle model_1 = new ChildModle();
+        ChildLocation loc_1 = new ChildLocation(28.583911,77.319116);
+        model_1.setId(id1);
+        model_1.setLocation(loc_1);
+        model_1.setName("noah");
+        model_1.setImageUrl(URL_DEMO);
 
-        public void setLat(double lat) {
-            this.lat = lat;
-        }
+        ChildModle model_3 = new ChildModle();
+        ChildLocation loc_3 = new ChildLocation(28.583078, 77.313744);
+        model_3.setId(id3);
+        model_3.setLocation(loc_3);
+        model_3.setName("mohamed");
+        model_3.setImageUrl(URL_DEMO);
 
-        public double getLng() {
-            return lng;
-        }
+        ChildModle model_2 = new ChildModle();
+        ChildLocation loc_2 = new ChildLocation(28.580903, 77.317408);
+        model_2.setId(id2);
+        model_2.setLocation(loc_2);
+        model_2.setName("ahmed");
+        model_2.setImageUrl(URL_DEMO);
 
-        public void setLng(double lng) {
-            this.lng = lng;
-        }
+        ChildModle model_4 = new ChildModle();
+        ChildLocation loc_4 = new ChildLocation(28.580108, 77.315271);
+        model_4.setId(id4);
+        model_4.setLocation(loc_4);
+        model_4.setName("belal");
+        model_4.setImageUrl(URL_DEMO);
+
+        ref.child(id1).setValue(model_1);
+        ref.child(id2).setValue(model_2);
+        ref.child(id3).setValue(model_3);
+        ref.child(id4).setValue(model_4);
+
     }
+
+
+    public  void unUsedCode(){
+        mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
+            @Override
+            public void onMapLoaded() {
+
+                LatLng customMarkerLocationOne = new LatLng(28.583911, 77.319116);
+                LatLng customMarkerLocationTwo = new LatLng(28.583078, 77.313744);
+                LatLng customMarkerLocationThree = new LatLng(28.580903, 77.317408);
+                LatLng customMarkerLocationFour = new LatLng(28.580108, 77.315271);
+                mMap.addMarker(new MarkerOptions().position(customMarkerLocationOne).
+                        icon(BitmapDescriptorFactory.fromBitmap(
+                                createCustomMarker(MapTracker.this,URL_DEMO,"Manish")))).setTitle("iPragmatech Solutions Pvt Lmt");
+                mMap.addMarker(new MarkerOptions().position(customMarkerLocationTwo).
+                        icon(BitmapDescriptorFactory.fromBitmap(
+                                createCustomMarker(MapTracker.this,URL_DEMO,"Narender")))).setTitle("Hotel Nirulas Noida");
+
+                mMap.addMarker(new MarkerOptions().position(customMarkerLocationThree).
+                        icon(BitmapDescriptorFactory.fromBitmap(
+                                createCustomMarker(MapTracker.this,URL_DEMO,"Neha")))).setTitle("Acha Khao Acha Khilao");
+                mMap.addMarker(new MarkerOptions().position(customMarkerLocationFour).
+                        icon(BitmapDescriptorFactory.fromBitmap(
+                                createCustomMarker(MapTracker.this,URL_DEMO,"Nupur")))).setTitle("Subway Sector 16 Noida");
+
+                //LatLngBound will cover all your marker on Google Maps
+                LatLngBounds.Builder builder = new LatLngBounds.Builder();
+                builder.include(customMarkerLocationOne); //Taking Point A (First LatLng)
+                builder.include(customMarkerLocationThree); //Taking Point B (Second LatLng)
+                LatLngBounds bounds = builder.build();
+                CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, 200);
+                mMap.moveCamera(cu);
+                mMap.animateCamera(CameraUpdateFactory.zoomTo(14), 2000, null);
+            }
+        });
+    }
+
 
     @Override
     protected void onDestroy() {
