@@ -35,7 +35,7 @@ public class ConfirmationRequestsAdapter extends RecyclerView.Adapter<Confirmati
     public void onBindViewHolder(@NonNull ConViewHolder holder, int position) {
         holder.request = requests.get(position);
         holder.child_name.setText(requests.get(position).getChildName());
-        //TODO glide
+
     }
 
     @Override
@@ -79,7 +79,7 @@ public class ConfirmationRequestsAdapter extends RecyclerView.Adapter<Confirmati
         }
 
         private void updateRequestAction(String action) {
-            FirebaseDatabase.getInstance().getReference("Requests").child(request.getId()).child("action").setValue(action);
+            FirebaseDatabase.getInstance().getReference("Requests").child(request.getId())  .child("action").setValue(action);
         }
     }
 }
