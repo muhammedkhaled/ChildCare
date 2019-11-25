@@ -36,6 +36,7 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -58,6 +59,9 @@ public class MapTracker extends FragmentActivity implements OnMapReadyCallback {
     ArrayList<ChildModle>children;
     DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference();
 
+    enum ChildChangeListener{
+        dataChange,moved,delete
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,31 +70,23 @@ public class MapTracker extends FragmentActivity implements OnMapReadyCallback {
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        getChildrenLocation();
+        //getChildrenLocation();
     }
 
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
+
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-
+        //uploadDemo();
         getChildrenLocation();
-
     }
 
     public void showMarkers(ArrayList<ChildModle> locations){
         if(mMap!=null){
             LatLng mLocation = null;
+            mMap.clear();
             for (int i = 0; i < locations.size(); i++) {
                 mLocation = new LatLng(locations.get(i).getLocation().getLat(),locations.get(i).getLocation().getLng());
                 //Log.d(TAG, "onMapReady location : "+locations.get(i).getLat()+locations.get(i).getLng());
@@ -98,27 +94,54 @@ public class MapTracker extends FragmentActivity implements OnMapReadyCallback {
                         .icon(BitmapDescriptorFactory.fromBitmap(createCustomMarker(this,locations.get(i).getImageUrl(),locations.get(i).getName()))));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mLocation,10));
             }
+            if(mLocation!=null){
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(mLocation));
+                mMap.animateCamera(CameraUpdateFactory.zoomTo(14), 2000, null);
+                dbRef.child(DB_NAME).removeEventListener(mListener);
+                dbRef.child(DB_NAME).addChildEventListener(new ChildEventListener() {
+                    @Override
+                    public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
 
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(mLocation));
-            mMap.animateCamera(CameraUpdateFactory.zoomTo(14), 2000, null);
+                    }
+
+                    @Override
+                    public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                        Log.d(TAG, "onChildChanged: child : "+dataSnapshot.getValue(ChildModle.class));
+                        Log.d(TAG, "onChildChanged: child : "+s);
+                        showSingleMark(dataSnapshot.getValue(ChildModle.class),ChildChangeListener.dataChange);
+                    }
+
+                    @Override
+                    public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+                        Log.d(TAG, "onChildRemoved: child : "+dataSnapshot.getValue(ChildModle.class));
+                        showSingleMark(dataSnapshot.getValue(ChildModle.class),ChildChangeListener.delete);
+                    }
+
+                    @Override
+                    public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                        Log.d(TAG, "onChildMoved: child : "+dataSnapshot.getValue(ChildModle.class));
+                        showSingleMark(dataSnapshot.getValue(ChildModle.class),ChildChangeListener.moved);
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    }
+                });
+            }
             // Add a marker in Sydney and move the camera
             // LatLng sydney = new LatLng(-34, 151);
             // mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
 
-
         }
-    }
 
+    }
     @SuppressLint("CheckResult")
     public Bitmap createCustomMarker(Context context, String ur, String _name) {
         View marker = getLayoutInflater().inflate(R.layout.custom_marker_layout,null);
         CircleImageView markerImage =  marker.findViewById(R.id.user_dp);
-       // markerImage.setImageResource(resource);
-
-       // markerImage.setImageURI(Uri.parse(ur));
         TextView txt_name = marker.findViewById(R.id.marker_child_name);
         txt_name.setText(_name);
-
         Glide.with(this).asBitmap().load(ur)
         .addListener(new RequestListener<Bitmap>() {
             @Override
@@ -147,19 +170,17 @@ public class MapTracker extends FragmentActivity implements OnMapReadyCallback {
 
         return bitmap;
     }
-
     public void  getChildrenLocation(){
-
         ArrayList<ChildModle> child = new ArrayList<>();
          mListener = dbRef.child(DB_NAME).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                child.clear();
                 for(DataSnapshot shot: dataSnapshot.getChildren()){
                     child.add(shot.getValue(ChildModle.class));
                     Log.d(TAG, "onDataChange: success");
                     Log.d(TAG, "onDataChange: ");
                 }
-                children =child;
                 showMarkers(child);
                 Log.d(TAG, "onDataChange: size : "+child.size());
             }
@@ -171,14 +192,41 @@ public class MapTracker extends FragmentActivity implements OnMapReadyCallback {
         });
 
     }
+    public void showSingleMark(ChildModle child, ChildChangeListener state){
+        Log.d(TAG, "showSingleMark: satate "+state+"\t"+child);
+        LatLng loc = new LatLng(child.getLocation().getLat(),child.getLocation().getLng());
+        switch (state){
+            case delete:
+                mMap.addMarker(new MarkerOptions().position(loc)).remove();
+                //m.remove();
+               // mMap.moveCamera(CameraUpdateFactory.zoomOut());
+                break;
+            case dataChange:
+                mMap.addMarker(new MarkerOptions().position(loc)
+                        .icon(BitmapDescriptorFactory.fromBitmap(createCustomMarker(this,child.getImageUrl(),child.getName())))
+                        .title(child.getName()));
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
+                break;
+        }
+//        mMap.addMarker(new MarkerOptions().position(loc)
+//                .icon(BitmapDescriptorFactory.fromBitmap(createCustomMarker(this,child.getImageUrl(),child.getName())))
+//        .title(child.getName()));
+//        mMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(mListener!=null){
+            FirebaseDatabase.getInstance().getReference().removeEventListener(mListener);
+        }
+    }
+
 
 
     public void uploadDemo(){
 
-        LatLng customMarkerLocationOne = new LatLng(28.583911, 77.319116);
-        LatLng customMarkerLocationTwo = new LatLng(28.583078, 77.313744);
-        LatLng customMarkerLocationThree = new LatLng(28.580903, 77.317408);
-        LatLng customMarkerLocationFour = new LatLng(28.580108, 77.315271);
+
 
         String id1 ="1001";
         String id2 ="1002";
@@ -222,8 +270,6 @@ public class MapTracker extends FragmentActivity implements OnMapReadyCallback {
         ref.child(id4).setValue(model_4);
 
     }
-
-
     public  void unUsedCode(){
         mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
             @Override
@@ -259,12 +305,4 @@ public class MapTracker extends FragmentActivity implements OnMapReadyCallback {
         });
     }
 
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if(mListener!=null){
-            FirebaseDatabase.getInstance().getReference().removeEventListener(mListener);
-        }
-    }
 }
