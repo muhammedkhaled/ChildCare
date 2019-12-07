@@ -1,4 +1,4 @@
-package com.example.childcare.data;
+package com.example.childcare.model;
 
 public class Request {
     private String action;

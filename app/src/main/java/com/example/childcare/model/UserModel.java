@@ -1,4 +1,4 @@
-package com.example.childcare;
+package com.example.childcare.model;
 
 public class UserModel
 {

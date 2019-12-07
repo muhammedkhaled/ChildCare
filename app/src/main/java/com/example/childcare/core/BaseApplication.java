@@ -1,4 +1,4 @@
-package com.example.childcare;
+package com.example.childcare.core;
 
 import android.app.Application;
 

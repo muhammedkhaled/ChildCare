@@ -1,4 +1,4 @@
-package com.example.childcare;
+package com.example.childcare.view.activity;
 
 import android.os.Bundle;
 import android.view.Menu;
@@ -8,15 +8,20 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import com.example.childcare.R;
+import com.example.childcare.view.fragment.ParentConfirmationRequestFragment;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
+
+    private DrawerLayout drawer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,8 +37,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         .setAction("Action", null).show();
             }
         });
-        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        drawer = findViewById(R.id.drawer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
     }
 
     @Override
@@ -66,6 +72,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         .replace(R.id.container, fragment)
                         .commit();
         }
+
+        drawer.closeDrawer(GravityCompat.START);
     }
 
     private boolean isExistsInBackStack(Fragment fragment) {

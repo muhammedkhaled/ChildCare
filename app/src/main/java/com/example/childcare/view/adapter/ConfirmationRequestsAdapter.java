@@ -1,4 +1,4 @@
-package com.example.childcare;
+package com.example.childcare.view.adapter;
 
 
 import android.view.LayoutInflater;
@@ -7,10 +7,13 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.childcare.data.Request;
-import com.google.firebase.database.FirebaseDatabase;
+
+import com.example.childcare.R;
+import com.example.childcare.core.FirebaseUtils;
+import com.example.childcare.model.Request;
 
 import java.util.ArrayList;
 
@@ -35,7 +38,7 @@ public class ConfirmationRequestsAdapter extends RecyclerView.Adapter<Confirmati
     public void onBindViewHolder(@NonNull ConViewHolder holder, int position) {
         holder.request = requests.get(position);
         holder.child_name.setText(requests.get(position).getChildName());
-        //TODO glide
+        //TODO Child Image glide
     }
 
     @Override
@@ -43,7 +46,7 @@ public class ConfirmationRequestsAdapter extends RecyclerView.Adapter<Confirmati
         return requests.size();
     }
 
-    public class ConViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    public class ConViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, FirebaseUtils.OnCompletedListener {
         TextView child_name;
         ImageView child_image;
         Button reject;
@@ -51,7 +54,7 @@ public class ConfirmationRequestsAdapter extends RecyclerView.Adapter<Confirmati
         Request request;
 
 
-        public ConViewHolder(@NonNull View itemView) {
+        ConViewHolder(@NonNull View itemView) {
             super(itemView);
             child_name = itemView.findViewById(R.id.tv_Child_name_id);
             child_image = itemView.findViewById(R.id.iv_child_image_id);
@@ -65,21 +68,20 @@ public class ConfirmationRequestsAdapter extends RecyclerView.Adapter<Confirmati
         public void onClick(View v) {
             switch (v.getId()) {
                 case R.id.btn_reject_id:
-                    updateRequestAction("Reject");
-                    setParentIdToNull(request.getChildId());
+                    FirebaseUtils.rejectParentRequest(request, this);
                     break;
                 case R.id.btn_Accept_id:
-                    updateRequestAction("Accept");
+                    FirebaseUtils.acceptParentRequest(request, this);
                     break;
             }
         }
 
-        private void setParentIdToNull(String childId) {
-            FirebaseDatabase.getInstance().getReference("Child").child(childId).child("parentId").setValue("");
-        }
-
-        private void updateRequestAction(String action) {
-            FirebaseDatabase.getInstance().getReference("Requests").child(request.getId()).child("action").setValue(action);
+        @Override
+        public void onCompleted(boolean isCompletedSuccessfully) {
+            if (isCompletedSuccessfully) {
+                requests.remove(getAdapterPosition());
+                notifyItemRemoved(getAdapterPosition());
+            }
         }
     }
 }
