@@ -8,5 +8,4 @@
     tools:context=".SplashScrean"
     android:background="@mipmap/ic_launcher">
 
-
 </androidx.constraintlayout.widget.ConstraintLayout>

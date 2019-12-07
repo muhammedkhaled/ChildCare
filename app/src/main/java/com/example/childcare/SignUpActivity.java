@@ -57,7 +57,7 @@ public class SignUpActivity extends AppCompatActivity {
         mobile_field = findViewById(R.id.mobile_field);
         parentId_field = findViewById(R.id.ParentId_field);
         parInetnt = getIntent();
-        if (parInetnt.hasExtra("parent")){
+        if (Prefs.getUserType() == UserType.PARENT){
             parentId_field.setVisibility(View.GONE);
             parentFlag = true;
 

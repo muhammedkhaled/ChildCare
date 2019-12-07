@@ -22,22 +22,15 @@ public final class Prefs {
     private static final String DEFAULT_SUFFIX = "_preferences";
     private static final String LENGTH = "#LENGTH";
     private static SharedPreferences mPrefs;
+    private final static String SHARED_PRESENCES_NAME = "com.example.childcare.userType";
+    private final static String USER_TYPE_KEY = "userType";
+    private final static String CHILD = "child";
+    private final static String PARENT = "parent";
 
-    /**
-     * Initialize the Prefs helper class to keep a reference to the SharedPreference for this
-     * application the SharedPreference will use the package name of the application as the Key.
-     * This method is deprecated please use the new builder.
-     *
-     * @param context the Application context.
-     */
-    @Deprecated
     public static void initPrefs(Context context) {
-        new Builder().setContext(context).build();
+        mPrefs = context.getSharedPreferences(SHARED_PRESENCES_NAME, Context.MODE_PRIVATE);
     }
 
-    public static void initPrefs(Context context, String prefsName, int mode) {
-        mPrefs = context.getSharedPreferences(prefsName, mode);
-    }
 
     /**
      * Returns the underlying SharedPreference instance
@@ -456,10 +449,34 @@ public final class Prefs {
         return getPreferences().edit();
     }
 
+    public static UserType getUserType() {
+        String userType = mPrefs.getString(USER_TYPE_KEY, null);
+        switch (userType) {
+            case CHILD:
+                return UserType.CHILD;
+            case PARENT:
+                return UserType.PARENT;
+        }
+        return null;
+    }
+
+    public static void saveUserType(UserType userType) {
+        switch (userType) {
+            case CHILD:
+                putString(USER_TYPE_KEY, CHILD);
+                break;
+            case PARENT:
+                putString(USER_TYPE_KEY, PARENT);
+                break;
+
+        }
+    }
+
     /**
      * Builder class for the EasyPrefs instance. You only have to call this once in the Application
      * onCreate. And in the rest of the code base you can call Prefs.method name.
      */
+
     public final static class Builder {
 
         private String mKey;
@@ -514,7 +531,7 @@ public final class Prefs {
                 mMode = ContextWrapper.MODE_PRIVATE;
             }
 
-            Prefs.initPrefs(mContext, mKey, mMode);
+            Prefs.initPrefs(mContext);
         }
     }
 }
