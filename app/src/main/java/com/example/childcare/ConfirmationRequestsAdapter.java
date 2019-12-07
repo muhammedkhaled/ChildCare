@@ -46,8 +46,7 @@ public class ConfirmationRequestsAdapter extends RecyclerView.Adapter<Confirmati
     public class ConViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         TextView child_name;
         ImageView child_image;
-        Button reject;
-        Button accept;
+        Button reject,accept ;
         Request request;
 
 
@@ -79,7 +78,7 @@ public class ConfirmationRequestsAdapter extends RecyclerView.Adapter<Confirmati
         }
 
         private void updateRequestAction(String action) {
-            FirebaseDatabase.getInstance().getReference("Requests").child(request.getId())  .child("action").setValue(action);
+            FirebaseDatabase.getInstance().getReference("Requests").child(request.getId()).child("action").setValue(action);
         }
     }
 }

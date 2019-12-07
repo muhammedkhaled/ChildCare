@@ -5,16 +5,18 @@ import android.os.Bundle;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
-import android.text.Layout;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -22,6 +24,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+
 import android.view.Menu;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -41,11 +44,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-      //  if(userIsChild()) {
-           MenuItem map = navigationView.findViewById(R.id.map);
-           map.setVisible(false);
+        //   if(userIsChild()) {
+        MenuItem map = navigationView.findViewById(R.id.map);
+        map.setVisible(false);
         //    createDialog();
-        //}
+        // }
 
     }
 
@@ -59,29 +62,24 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private boolean isParentIdValid(String parentId) {
 
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child("Users").child("ParentUsers");
-        rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
+        Query query = rootRef.orderByChild(parentId).equalTo(parentId);
+        query.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot snapshot) {
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                dataSnapshot.exists();
 
-
-                if (snapshot.hasChild(parentId)) {
-                    
-                    FirebaseDatabase.getInstance().getReference().child("Users").child("ParentUsers").child(parentId);
-                    // run some code
-                }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
-
-
         });
+
 
 //todo check parentID and return boolean
 
-        return false ;
+        return false;
     }
 
 
@@ -105,12 +103,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 alertDialog.dismiss();
                 alertDialog.cancel();
                 Toast.makeText(this, "accepted ID", Toast.LENGTH_SHORT).show();
-            }else{
+            } else {
                 Toast.makeText(this, "Wrong parent ID", Toast.LENGTH_SHORT).show();
                 tf_parent.setText("");
             }
         });
-
 
 
     }
@@ -133,9 +130,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
         return false;
     }
-
-
-
 
 
     // methods which helps you to attach any fragment
