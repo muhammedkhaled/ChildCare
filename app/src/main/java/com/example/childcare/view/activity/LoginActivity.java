@@ -1,4 +1,4 @@
-package com.example.childcare;
+package com.example.childcare.view.activity;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -10,15 +10,14 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.childcare.R;
+import com.example.childcare.core.FirebaseUtils;
 
 public class LoginActivity extends AppCompatActivity {
 
-    EditText email_field,password_field;
-    String email,password;
+    EditText email_field, password_field;
+    String email, password;
     ProgressDialog progressDialog;
-
-    FirebaseAuth auth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,8 +30,6 @@ public class LoginActivity extends AppCompatActivity {
     private void initViews() {
         email_field = findViewById(R.id.email_field);
         password_field = findViewById(R.id.password_field);
-
-        auth = FirebaseAuth.getInstance();
     }
 
     public void signin(View view) {
@@ -58,22 +55,20 @@ public class LoginActivity extends AppCompatActivity {
         progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progressDialog.setCancelable(false);
         progressDialog.show();
-
-        login(email,password);
+        login(email, password);
     }
 
     private void login(String email, String password) {
-        auth.signInWithEmailAndPassword(email,password)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        progressDialog.dismiss();
-                        startActivity(new Intent(getApplicationContext(), MainActivity.class));
-                        finish();
-                    } else {
-                        Toast.makeText(getApplicationContext(),
-                                task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                        progressDialog.dismiss();
-                    }
-                });
+        FirebaseUtils.login(email, password, isCompleted -> {
+            if (isCompleted) {
+                progressDialog.dismiss();
+                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                finish();
+            } else {
+                Toast.makeText(getApplicationContext(),
+                        "Wrong UserName or Password", Toast.LENGTH_SHORT).show();
+                progressDialog.dismiss();
+            }
+        });
     }
 }

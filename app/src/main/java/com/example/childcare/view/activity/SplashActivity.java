@@ -1,17 +1,20 @@
-package com.example.childcare;
+package com.example.childcare.view.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.childcare.R;
+import com.example.childcare.core.Prefs;
+import com.example.childcare.model.UserType;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class SplashScrean extends AppCompatActivity {
+public class SplashActivity extends AppCompatActivity {
     FirebaseAuth auth;
 
     @Override

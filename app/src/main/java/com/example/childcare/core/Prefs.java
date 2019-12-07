@@ -1,4 +1,4 @@
-package com.example.childcare;
+package com.example.childcare.core;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -9,6 +9,7 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.example.childcare.model.UserType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
