@@ -13,12 +13,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.theartofdev.edmodo.cropper.CropImage;
@@ -28,18 +24,16 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 public class SignUpActivity extends AppCompatActivity {
     CircleImageView circleImageView;
-    EditText email_field,username_field,password_field,confirm_password_field,mobile_field,
+    EditText email_field, username_field, password_field, confirm_password_field, mobile_field,
             parentId_field;
-    String email,username,password,c_password,mobile, parentId;
+    String email, username, password, c_password, mobile, parentId;
     Uri photopath;
 
     FirebaseAuth auth;
-    FirebaseDatabase firebaseDatabase;
-    DatabaseReference databaseReference;
-
     ProgressDialog progressDialog;
-    Intent parInetnt ;
+    Intent parInetnt;
     boolean parentFlag = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,16 +51,13 @@ public class SignUpActivity extends AppCompatActivity {
         mobile_field = findViewById(R.id.mobile_field);
         parentId_field = findViewById(R.id.ParentId_field);
         parInetnt = getIntent();
-        if (Prefs.getUserType() == UserType.PARENT){
+        if (Prefs.getUserType() == UserType.PARENT) {
             parentId_field.setVisibility(View.GONE);
             parentFlag = true;
 
         }
 
         auth = FirebaseAuth.getInstance();
-
-        firebaseDatabase = FirebaseDatabase.getInstance();
-        databaseReference = firebaseDatabase.getReference();
 
         FirebaseUser user = auth.getCurrentUser();
 
@@ -76,22 +67,19 @@ public class SignUpActivity extends AppCompatActivity {
             finish();
         }
 
-       circleImageView.setOnClickListener(view -> {
-//                    Intent in = new Intent(Intent.ACTION_GET_CONTENT);
-//                    in.setType("image/*");
-//                    startActivityForResult(in,10);
-           CropImage.activity()
-                   .setGuidelines(CropImageView.Guidelines.ON_TOUCH)
-                   .setAspectRatio(1,1)
-                   .start(SignUpActivity.this);
-       });
+        circleImageView.setOnClickListener(view -> {
+            CropImage.activity()
+                    .setGuidelines(CropImageView.Guidelines.ON_TOUCH)
+                    .setAspectRatio(1, 1)
+                    .start(SignUpActivity.this);
+        });
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE  && resultCode == RESULT_OK &&
+        if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK &&
                 data != null) {
             CropImage.ActivityResult result = CropImage.getActivityResult(data);
             photopath = result.getUri();
@@ -152,12 +140,13 @@ public class SignUpActivity extends AppCompatActivity {
             return;
         }
 
-        if (!parentFlag){
-            if (TextUtils.isEmpty(parentId)){
+        if (!parentFlag) {
+            if (TextUtils.isEmpty(parentId)) {
                 Toast.makeText(getApplicationContext(), "enter your parentId",
                         Toast.LENGTH_SHORT).show();
                 parentId_field.requestFocus();
-            return; }
+                return;
+            }
         }
 
         if (photopath == null) {
@@ -171,12 +160,12 @@ public class SignUpActivity extends AppCompatActivity {
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        createUser(email,password,username,mobile, parentId);
+        createUser(email, password, username, mobile, parentId);
     }
 
     private void createUser(final String email, String password, final String username,
                             final String mobile, final String parentid) {
-        auth.createUserWithEmailAndPassword(email,password)
+        auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         FirebaseUser user = task.getResult().getUser();
@@ -184,7 +173,7 @@ public class SignUpActivity extends AppCompatActivity {
                         if (user != null)
                             user.sendEmailVerification();
                         String uId = task.getResult().getUser().getUid();
-                        uploadImage(email,username,mobile,parentid,uId);
+                        uploadImage(email, username, mobile, parentid, uId);
                     } else {
                         Toast.makeText(getApplicationContext(), task.getException().getMessage()
                                 , Toast.LENGTH_SHORT).show();
@@ -195,32 +184,31 @@ public class SignUpActivity extends AppCompatActivity {
 
     private void uploadImage(final String email, final String username, final String mobile
             , final String parentid, final String uId) {
-        UploadTask uploadTask;
-        final StorageReference storageReference = FirebaseStorage.getInstance().getReference()
-                .child("images/" + photopath.getLastPathSegment());
-
-        uploadTask = storageReference.putFile(photopath);
-
-        Task<Uri> task = uploadTask.continueWithTask(task1 -> storageReference.getDownloadUrl()).
-                addOnCompleteListener(task12 -> {
-                    if (task12.isSuccessful()) {
-                        Uri image_uri = task12.getResult();
-                        String image_url = image_uri.toString();
-                            addUser(email,username,mobile,parentid,uId,image_url);
-                    }
-                });
+        if (photopath != null) {
+            UploadTask uploadTask;
+            StorageReference storageReference = FirebaseUtils.getImagesStorage().child(uId + ".jpg");
+            uploadTask = storageReference.putFile(photopath);
+            uploadTask.continueWithTask(task1 -> storageReference.getDownloadUrl()).
+                    addOnCompleteListener(task12 -> {
+                        if (task12.isSuccessful()) {
+                            Uri image_uri = task12.getResult();
+                            String image_url = image_uri.toString();
+                            addUser(email, username, mobile, parentid, uId, image_url);
+                        }
+                    });
+        }
     }
 
     private void addUser(String email, String username, String mobile, String parentid, String id,
                          String photo) {
         UserModel userModel;
-            if (!parentFlag){
-                userModel = new UserModel(email,username,mobile,parentid,photo);
-                databaseReference.child("Users").child("ChildUsers").child(id).setValue(userModel);
-            }else {
-                userModel = new UserModel(email,username,mobile,photo);
-                databaseReference.child("Users").child("ParentUsers").child(id).setValue(userModel);
-            }
+        if (!parentFlag) {
+            userModel = new UserModel(email, username, mobile, parentid, photo);
+            FirebaseUtils.getChildDatabaseReference().child(id).setValue(userModel);
+        } else {
+            userModel = new UserModel(email, username, mobile, photo);
+            FirebaseUtils.getParentDatabaseReference().child(id).setValue(userModel);
+        }
 
         progressDialog.dismiss();
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);

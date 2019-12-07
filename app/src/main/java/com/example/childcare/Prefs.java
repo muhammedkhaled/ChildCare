@@ -451,12 +451,13 @@ public final class Prefs {
 
     public static UserType getUserType() {
         String userType = mPrefs.getString(USER_TYPE_KEY, null);
-        switch (userType) {
-            case CHILD:
-                return UserType.CHILD;
-            case PARENT:
-                return UserType.PARENT;
-        }
+        if (userType != null)
+            switch (userType) {
+                case CHILD:
+                    return UserType.CHILD;
+                case PARENT:
+                    return UserType.PARENT;
+            }
         return null;
     }
 
